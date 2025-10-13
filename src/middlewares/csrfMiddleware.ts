@@ -1,8 +1,6 @@
-// src/middleware/csrf.middleware.ts
 import { Request, Response, NextFunction } from "express";
 import { generateCsrfToken } from "../utils/helpers";
-
-const CSRF_COOKIE_NAME = "csrf_token";
+import { COOKIE_SAME_SITE, CSRF_COOKIE_NAME } from "../utils/config";
 
 // ✅ Step 1: Issue token if not exists
 export const csrfTokenMiddleware = (
@@ -16,7 +14,7 @@ export const csrfTokenMiddleware = (
     const newToken = generateCsrfToken();
     res.cookie(CSRF_COOKIE_NAME, newToken, {
       httpOnly: false, // must be readable by frontend
-      sameSite: "strict",
+      sameSite: COOKIE_SAME_SITE,
       secure: process.env.NODE_ENV === "production",
     });
   }

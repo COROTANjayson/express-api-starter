@@ -17,10 +17,7 @@ app.use(express.json());
 app.use(morgan("dev"));
 
 // Default: 100 requests per 15 minutes
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-});
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use(limiter);
 
 // 🔹 Generate token automatically on first visit
@@ -34,6 +31,8 @@ app.get("/csrf-token", (req, res) => {
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", usersRouter);
 
+// Auto-issue CSRF token cookie if missing
+app.use(csrfTokenMiddleware);
 // export const csrfProtection = csrf({ cookie: true });
 
 app.get("/", (_req, res) =>

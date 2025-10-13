@@ -4,6 +4,14 @@ import AuthService from "./auth.services";
 import { AppError } from "../../utils/app-error";
 import { loginSchema, registerSchema } from "./auth.types";
 import { validation } from "../../utils/validate";
+import { generateCsrfToken } from "../../utils/helpers";
+import {
+  COOKIE_DOMAIN,
+  COOKIE_SAME_SITE,
+  COOKIE_SECURE,
+  CSRF_COOKIE_NAME,
+  REFRESH_COOKIE_NAME,
+} from "../../utils/config";
 
 export class AuthController {
   private authSvc = new AuthService();
@@ -28,21 +36,27 @@ export class AuthController {
       const payload = req.body;
       validation(res, loginSchema, payload);
       const tokens = await this.authSvc.login(payload);
+      const csrfToken = generateCsrfToken();
 
-      // res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
-      //   httpOnly: true,
-      //   secure: COOKIE_SECURE,
-      //   domain: COOKIE_DOMAIN,
-      //    sameSite: "strict",
-      //   maxAge: 1000 * 60 * 60 * 24 * 7, // match REFRESH_EXPIRES (approx)
-      // });
-      //       res.cookie(CSRF_COOKIE_NAME, csrfToken, {
-      //   httpOnly: false,
-      //   sameSite: "strict",
-      //   secure: COOKIE_SECURE,
-      // });
+      res.cookie(REFRESH_COOKIE_NAME, tokens.refreshToken, {
+        httpOnly: true,
+        secure: COOKIE_SECURE,
+        domain: COOKIE_DOMAIN,
+        sameSite: COOKIE_SAME_SITE,
+        maxAge: 1000 * 60 * 60 * 24 * 7, // match REFRESH_EXPIRES (approx)
+      });
+      res.cookie(CSRF_COOKIE_NAME, csrfToken, {
+        httpOnly: false,
+        sameSite: COOKIE_SAME_SITE,
+        secure: COOKIE_SECURE,
+      });
 
-      return successResponse(res, tokens, 200, "Login Success");
+      return successResponse(
+        res,
+        { ...tokens, csrfToken },
+        200,
+        "Login Success"
+      );
     } catch (err: any) {
       if (err instanceof AppError) {
         return errorResponse(res, err.statusCode, err.message);
@@ -53,19 +67,20 @@ export class AuthController {
 
   async refresh(req: Request, res: Response) {
     try {
-      const { refreshToken } = req.body;
+      // const { refreshToken } = req.body;
+      const refreshToken = req.cookies[REFRESH_COOKIE_NAME];
       if (!refreshToken)
         return errorResponse(res, 400, "refreshToken required");
 
       const tokens = await this.authSvc.refresh(refreshToken);
 
       // Rotate CSRF token for new session
-      // const newCsrf = generateCsrfToken();
-      // res.cookie(CSRF_COOKIE_NAME, newCsrf, {
-      //   httpOnly: false,
-      //   sameSite: "strict",
-      //   secure: COOKIE_SECURE,
-      // });
+      const newCsrf = generateCsrfToken();
+      res.cookie(CSRF_COOKIE_NAME, newCsrf, {
+        httpOnly: false,
+        sameSite: COOKIE_SAME_SITE,
+        secure: COOKIE_SECURE,
+      });
       return successResponse(res, tokens, 200, "Token Refresh");
     } catch (err: any) {
       if (err instanceof AppError) {
