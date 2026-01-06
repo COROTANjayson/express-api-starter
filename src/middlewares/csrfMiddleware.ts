@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { generateCsrfToken } from "../utils/helpers";
-import { COOKIE_SAME_SITE, CSRF_COOKIE_NAME } from "../utils/config";
+import {
+  generateCsrfToken,
+  signCsrfToken,
+  verifyCsrfToken,
+} from "../utils/helpers";
+import { COOKIE_SAME_SITE, CSRF_COOKIE_NAME, CSRF_SECRET } from "../utils/config";
 
 // ✅ Step 1: Issue token if not exists
 export const csrfTokenMiddleware = (
@@ -9,10 +13,11 @@ export const csrfTokenMiddleware = (
   next: NextFunction
 ) => {
   const token = req.cookies[CSRF_COOKIE_NAME];
-
-  if (!token) {
+  
+  if (!token || !verifyCsrfToken(token, CSRF_SECRET)) {
     const newToken = generateCsrfToken();
-    res.cookie(CSRF_COOKIE_NAME, newToken, {
+    const signedToken = signCsrfToken(newToken, CSRF_SECRET);
+    res.cookie(CSRF_COOKIE_NAME, signedToken, {
       httpOnly: false, // must be readable by frontend
       sameSite: COOKIE_SAME_SITE,
       secure: process.env.NODE_ENV === "production",
@@ -29,10 +34,15 @@ export const verifyCsrfMiddleware = (
   next: NextFunction
 ) => {
   const csrfCookie = req.cookies[CSRF_COOKIE_NAME];
+  console.log("csrfCookie",csrfCookie)
   const csrfHeader = req.headers["x-csrf-token"];
 
   if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
     return res.status(403).json({ error: "Invalid CSRF token" });
+  }
+
+  if (!verifyCsrfToken(csrfCookie, CSRF_SECRET)) {
+     return res.status(403).json({ error: "Invalid CSRF token signature" });
   }
 
   next();

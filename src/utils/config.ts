@@ -18,3 +18,4 @@ export const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN;
 export const COOKIE_SECURE = process.env.COOKIE_SECURE === "true" || false;
 export const COOKIE_SAME_SITE =
   (process.env.COOKIE_SAME_SITE as "none" | "lax" | "strict") || "none";
+export const CSRF_SECRET = process.env.CSRF_SECRET || "csrf-secret-key";
