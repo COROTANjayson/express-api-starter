@@ -4,7 +4,11 @@ import {
   signCsrfToken,
   verifyCsrfToken,
 } from "../utils/helpers";
-import { COOKIE_SAME_SITE, CSRF_COOKIE_NAME, CSRF_SECRET } from "../utils/config";
+import {
+  COOKIE_SAME_SITE,
+  CSRF_COOKIE_NAME,
+  CSRF_SECRET,
+} from "../utils/config";
 
 // ✅ Step 1: Issue token if not exists
 export const csrfTokenMiddleware = (
@@ -13,7 +17,7 @@ export const csrfTokenMiddleware = (
   next: NextFunction
 ) => {
   const token = req.cookies[CSRF_COOKIE_NAME];
-  
+
   if (!token || !verifyCsrfToken(token, CSRF_SECRET)) {
     const newToken = generateCsrfToken();
     const signedToken = signCsrfToken(newToken, CSRF_SECRET);
@@ -33,8 +37,13 @@ export const verifyCsrfMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
+  // Skip CSRF check for safe methods
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    return next();
+  }
+
   const csrfCookie = req.cookies[CSRF_COOKIE_NAME];
-  console.log("csrfCookie",csrfCookie)
+  console.log("csrfCookie", csrfCookie);
   const csrfHeader = req.headers["x-csrf-token"];
 
   if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
@@ -42,7 +51,7 @@ export const verifyCsrfMiddleware = (
   }
 
   if (!verifyCsrfToken(csrfCookie, CSRF_SECRET)) {
-     return res.status(403).json({ error: "Invalid CSRF token signature" });
+    return res.status(403).json({ error: "Invalid CSRF token signature" });
   }
 
   next();

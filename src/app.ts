@@ -5,7 +5,10 @@ import { authRouter } from "./domains/auth/auth.routes";
 import { usersRouter } from "./domains/user/user.routes";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
-import { csrfTokenMiddleware } from "./middlewares/csrfMiddleware";
+import {
+  csrfTokenMiddleware,
+  verifyCsrfMiddleware,
+} from "./middlewares/csrfMiddleware";
 
 // import csrf from 'csurf';
 // https://chatgpt.com/c/68eb9870-0f28-8321-89fb-b3f88308208d <- csrf
@@ -22,6 +25,8 @@ app.use(limiter);
 
 // 🔹 Generate token automatically on first visit
 app.use(csrfTokenMiddleware);
+// 🔹 Verify token on state-changing methods
+app.use(verifyCsrfMiddleware);
 
 // 🔹 Public route (just to get CSRF token)
 app.get("/csrf-token", (req, res) => {
