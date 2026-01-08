@@ -17,8 +17,11 @@ import {
 // const redisUrl = process.env.REDIS_URL;
 // const redis = redisUrl ? new Redis(redisUrl) : null;
 
+import { EmailService } from "../../utils/email.service";
+
 export default class AuthService {
   private userRepo = new UserRepository();
+  private emailService = new EmailService();
 
   // Register
   async register(data: RegisterInput) {
@@ -26,7 +29,25 @@ export default class AuthService {
     if (existing) throw new AppError("Email already registered", 409);
 
     const hashed = await generateHash(data.password);
-    const user = await this.userRepo.create({ ...data, password: hashed });
+
+    // Generate verification token
+    const verificationToken = uuidv4();
+    const verificationTokenExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+    const user = await this.userRepo.create({
+      ...data,
+      password: hashed,
+      verificationToken,
+      verificationTokenExpires,
+      isVerified: false,
+    });
+
+    // Send verification email
+    await this.emailService.sendVerificationEmail(
+      user.email,
+      verificationToken
+    );
+
     const login = await this.login({
       email: user.email,
       password: data.password,
@@ -35,6 +56,7 @@ export default class AuthService {
     return {
       id: user.id,
       email: user.email,
+      isVerified: user.isVerified,
       ...login,
     };
   }
@@ -117,7 +139,56 @@ export default class AuthService {
       if (user.currentTokenId === tokenJti) {
         await this.userRepo.update(userId, { currentTokenId: null });
       }
-    } catch {
+    } catch {}
+  }
+
+  // Verify Email
+  async verifyEmail(token: string) {
+    const user = await this.userRepo.findByVerificationToken(token); // Need to implement findByVerificationToken or similar
+    // Since repository might not have this method, let's assume we can find by something else or add the method.
+    // Actually, standard repo might NOT have it.
+    // Let's check `user.repository.ts`. If it's generic, we might need a raw query or scan.
+    // For now, let's assuming we might need to add `findByVerificationToken` to repo.
+    // Wait, I cannot see `findByVerificationToken` in the repo interface I saw earlier.
+    // I should check `user.repository.ts` first.
+    // BUT, for now, let's implement the logic assuming I'll fix the repo in the next step.
+    if (!user) throw new AppError("Invalid token", 400);
+
+    if (
+      user.verificationTokenExpires &&
+      user.verificationTokenExpires < new Date()
+    ) {
+      throw new AppError("Token expired", 400);
     }
+
+    await this.userRepo.update(user.id, {
+      isVerified: true,
+      verificationToken: null,
+      verificationTokenExpires: null,
+    });
+
+    return { message: "Email verified successfully" };
+  }
+
+  // Resend Verification
+  async resendVerification(email: string) {
+    const user = await this.userRepo.findByEmail(email);
+    if (!user) throw new AppError("User not found", 404);
+    if (user.isVerified) throw new AppError("Email already verified", 400);
+
+    const verificationToken = uuidv4();
+    const verificationTokenExpires = new Date(Date.now() + 30 * 60 * 1000);
+
+    await this.userRepo.update(user.id, {
+      verificationToken,
+      verificationTokenExpires,
+    });
+
+    await this.emailService.sendVerificationEmail(
+      user.email,
+      verificationToken
+    );
+
+    return { message: "Verification email sent" };
   }
 }

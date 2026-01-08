@@ -19,4 +19,7 @@ model User {
     updatedAt      DateTime @updatedAt
     // For refresh token rotation using JTI approach:
     currentTokenId String?
+    isVerified Boolean @default(false)
+    verificationToken String? @unique
+    verificationTokenExpires DateTime?
 }

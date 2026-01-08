@@ -8,6 +8,9 @@ export default class UserEntity {
   public createdAt?: Date;
   public updatedAt?: Date;
   public currentTokenId?: string | null;
+  public isVerified: boolean = false;
+  public verificationToken?: string | null;
+  public verificationTokenExpires?: Date | null;
 
   constructor(props: {
     id?: string;
@@ -19,6 +22,9 @@ export default class UserEntity {
     createdAt?: Date;
     updatedAt?: Date;
     currentTokenId?: string;
+    isVerified?: boolean;
+    verificationToken?: string;
+    verificationTokenExpires?: Date;
   }) {
     Object.assign(this, props);
   }

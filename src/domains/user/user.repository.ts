@@ -32,4 +32,8 @@ export default class UserRepository {
   async delete(id: string) {
     return prisma.user.delete({ where: { id } });
   }
+
+  async findByVerificationToken(token: string) {
+    return prisma.user.findUnique({ where: { verificationToken: token } });
+  }
 }

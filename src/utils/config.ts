@@ -19,3 +19,8 @@ export const COOKIE_SECURE = process.env.COOKIE_SECURE === "true" || false;
 export const COOKIE_SAME_SITE =
   (process.env.COOKIE_SAME_SITE as "none" | "lax" | "strict") || "none";
 export const CSRF_SECRET = process.env.CSRF_SECRET || "csrf-secret-key";
+
+export const RESEND_API_KEY = process.env.RESEND_API_KEY;
+export const RESEND_SENDER_EMAIL = process.env.RESEND_SENDER_EMAIL;
+
+export const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";

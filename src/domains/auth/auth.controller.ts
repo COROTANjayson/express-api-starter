@@ -16,6 +16,28 @@ import {
 export class AuthController {
   private authSvc = new AuthService();
 
+  async resendVerification(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+      const result = await this.authSvc.resendVerification(email);
+      return successResponse(res, result, 200, "Verification email sent");
+    } catch (err: any) {
+      return errorResponse(res, err.statusCode || 500, err.message);
+    }
+  }
+
+  async verifyEmail(req: Request, res: Response) {
+    try {
+      const { token } = req.body; // or req.body depending on how we want to implement it, usually query param from link
+      if (!token) throw new Error("Token missing");
+
+      const result = await this.authSvc.verifyEmail(token as string);
+      return successResponse(res, result, 200, "Email verified");
+    } catch (err: any) {
+      return errorResponse(res, err.statusCode || 500, err.message);
+    }
+  }
+
   async register(req: Request, res: Response) {
     try {
       const payload = req.body;
