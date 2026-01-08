@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { RESEND_API_KEY, RESEND_SENDER_EMAIL, CLIENT_URL } from "./config";
-import { queueVerificationEmail as addVerificationEmailToQueue } from "../queues/email.queue";
+import { queueEmail as addEmailToQueue, EmailJob } from "../queues/email.queue";
+import { renderEmailTemplate } from "./email-renderer";
 
 export class EmailService {
   private resend: Resend | null = null;
@@ -16,18 +17,22 @@ export class EmailService {
     }
   }
 
-  async sendVerificationEmail(to: string, token: string) {
-    const verificationLink = `${CLIENT_URL}/verify-email?token=${token}`;
-    const htmlContent = `<p>Please verify your email by clicking the link below:</p><br><a href="${verificationLink}">${verificationLink}</a><br><p>This link expires in 30 minutes.</p>`;
-    const textContent = `Please verify your email by clicking the link: ${verificationLink}`;
-    const subject = "Verify your email";
-    const sender = RESEND_SENDER_EMAIL || "onboarding@resend.dev";
+  /**
+   * Send email directly using template
+   */
+  async sendEmail(emailData: EmailJob): Promise<any> {
+    const { to, subject, template, variables, from } = emailData;
+
+    // Render email template
+    const { html, text } = renderEmailTemplate(template, variables);
+
+    const sender = from || RESEND_SENDER_EMAIL || "onboarding@resend.dev";
 
     if (!this.resend) {
       console.log("Simulating Email Send:", {
         to,
         subject,
-        html: htmlContent,
+        template,
         from: sender,
       });
       return { success: true, message: "Simulated" };
@@ -36,10 +41,10 @@ export class EmailService {
     try {
       const data = await this.resend.emails.send({
         from: sender,
-        to: to,
+        to: typeof to === "string" ? to : to,
         subject: subject,
-        html: htmlContent,
-        text: textContent,
+        html: html,
+        text: text,
       });
 
       if (data.error) {
@@ -55,13 +60,16 @@ export class EmailService {
     }
   }
 
-  async queueVerificationEmail(to: string, token: string): Promise<void> {
+  /**
+   * Queue email for asynchronous processing
+   */
+  async queueEmail(emailData: EmailJob): Promise<void> {
     try {
-      await addVerificationEmailToQueue(to, token);
+      await addEmailToQueue(emailData);
     } catch (error) {
-      console.error("Failed to queue verification email:", error);
+      console.error("Failed to queue email:", error);
       console.log("Falling back to direct email sending...");
-      await this.sendVerificationEmail(to, token);
+      await this.sendEmail(emailData);
     }
   }
 }

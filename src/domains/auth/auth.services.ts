@@ -42,11 +42,18 @@ export default class AuthService {
       isVerified: false,
     });
 
-    // Queue verification email for asynchronous processing
-    await this.emailService.queueVerificationEmail(
-      user.email,
-      verificationToken
-    );
+    // Queue verification email using template
+    const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`;
+    await this.emailService.queueEmail({
+      to: user.email,
+      subject: "Verify your email",
+      template: "verification-email",
+      variables: {
+        verificationLink,
+        currentYear: new Date().getFullYear(),
+        appName: "Your App",
+      },
+    });
 
     const login = await this.login({
       email: user.email,
@@ -184,10 +191,17 @@ export default class AuthService {
       verificationTokenExpires,
     });
 
-    await this.emailService.queueVerificationEmail(
-      user.email,
-      verificationToken
-    );
+    const verificationLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`;
+    await this.emailService.queueEmail({
+      to: user.email,
+      subject: "Verify your email",
+      template: "verification-email",
+      variables: {
+        verificationLink,
+        currentYear: new Date().getFullYear(),
+        appName: "Your App",
+      },
+    });
 
     return { message: "Verification email sent" };
   }

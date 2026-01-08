@@ -33,22 +33,19 @@ export function startEmailWorker(): Worker<EmailJobData> | null {
       );
 
       try {
-        const { type, to, token } = job.data;
+        // Simply pass all job data to sendEmail - no switch needed!
+        await emailService.sendEmail(job.data);
 
-        switch (type) {
-          case "verification":
-            await emailService.sendVerificationEmail(to, token);
-            console.log(`✓ Verification email sent to ${to}`);
-            break;
-
-          default:
-            throw new Error(`Unknown email job type: ${type}`);
-        }
+        const recipients =
+          typeof job.data.to === "string"
+            ? job.data.to
+            : job.data.to.join(", ");
+        console.log(`✓ Email sent: ${job.data.subject} to ${recipients}`);
 
         return { success: true };
       } catch (error: any) {
         console.error(`✗ Email job ${job.id} failed:`, error.message || error);
-        throw error; // Re-throw to trigger retry mechanism
+        throw error;
       }
     },
     {
@@ -59,7 +56,7 @@ export function startEmailWorker(): Worker<EmailJobData> | null {
             duration: EMAIL_QUEUE_RATE_DURATION,
           }
         : undefined,
-      concurrency: 1, // Process one email at a time to respect rate limits
+      concurrency: 1,
     }
   );
 

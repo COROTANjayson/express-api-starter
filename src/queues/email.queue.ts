@@ -2,15 +2,17 @@ import { Queue } from "bullmq";
 import { getRedisClient } from "../libs/redis.config";
 
 /**
- * Email job data types
+ * Generic email job data
  */
-export interface VerificationEmailJob {
-  type: "verification";
-  to: string;
-  token: string;
+export interface EmailJob {
+  to: string | string[];
+  subject: string;
+  template: string;
+  variables: Record<string, any>;
+  from?: string;
 }
 
-export type EmailJobData = VerificationEmailJob;
+export type EmailJobData = EmailJob;
 
 /**
  * Email queue for processing emails asynchronously
@@ -31,17 +33,17 @@ export function getEmailQueue(): Queue<EmailJobData> | null {
   emailQueue = new Queue<EmailJobData>("email", {
     connection: redisClient,
     defaultJobOptions: {
-      attempts: 3, // Retry failed jobs up to 3 times
+      attempts: 3,
       backoff: {
         type: "exponential",
-        delay: 5000, // Start with 5 second delay, then exponential backoff
+        delay: 5000,
       },
       removeOnComplete: {
-        age: 24 * 3600, // Keep completed jobs for 24 hours
-        count: 100, // Keep last 100 completed jobs
+        age: 24 * 3600,
+        count: 100,
       },
       removeOnFail: {
-        age: 7 * 24 * 3600, // Keep failed jobs for 7 days
+        age: 7 * 24 * 3600,
       },
     },
   });
@@ -52,12 +54,9 @@ export function getEmailQueue(): Queue<EmailJobData> | null {
 }
 
 /**
- * Add verification email to queue
+ * Queue an email for asynchronous sending
  */
-export async function queueVerificationEmail(
-  to: string,
-  token: string
-): Promise<void> {
+export async function queueEmail(emailData: EmailJob): Promise<void> {
   const queue = getEmailQueue();
   if (!queue) {
     throw new Error(
@@ -65,19 +64,13 @@ export async function queueVerificationEmail(
     );
   }
 
-  await queue.add(
-    "verification-email",
-    {
-      type: "verification",
-      to,
-      token,
-    },
-    {
-      priority: 1, // Higher priority for verification emails
-    }
-  );
+  await queue.add("send-email", emailData, {
+    priority: 1,
+  });
 
-  console.log(`✓ Verification email queued for ${to}`);
+  const recipients =
+    typeof emailData.to === "string" ? emailData.to : emailData.to.join(", ");
+  console.log(`✓ Email queued: ${emailData.subject} to ${recipients}`);
 }
 
 /**
