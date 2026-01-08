@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { RESEND_API_KEY, RESEND_SENDER_EMAIL, CLIENT_URL } from "./config";
+import { queueVerificationEmail as addVerificationEmailToQueue } from "../queues/email.queue";
 
 export class EmailService {
   private resend: Resend | null = null;
@@ -51,6 +52,16 @@ export class EmailService {
     } catch (error) {
       console.error("Email sending failed:", error);
       throw error;
+    }
+  }
+
+  async queueVerificationEmail(to: string, token: string): Promise<void> {
+    try {
+      await addVerificationEmailToQueue(to, token);
+    } catch (error) {
+      console.error("Failed to queue verification email:", error);
+      console.log("Falling back to direct email sending...");
+      await this.sendVerificationEmail(to, token);
     }
   }
 }

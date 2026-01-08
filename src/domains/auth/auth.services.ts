@@ -42,8 +42,8 @@ export default class AuthService {
       isVerified: false,
     });
 
-    // Send verification email
-    await this.emailService.sendVerificationEmail(
+    // Queue verification email for asynchronous processing
+    await this.emailService.queueVerificationEmail(
       user.email,
       verificationToken
     );
@@ -184,7 +184,7 @@ export default class AuthService {
       verificationTokenExpires,
     });
 
-    await this.emailService.sendVerificationEmail(
+    await this.emailService.queueVerificationEmail(
       user.email,
       verificationToken
     );

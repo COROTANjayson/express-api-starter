@@ -24,3 +24,11 @@ export const RESEND_API_KEY = process.env.RESEND_API_KEY;
 export const RESEND_SENDER_EMAIL = process.env.RESEND_SENDER_EMAIL;
 
 export const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+
+// Email Queue Configuration (for Resend free tier: 100 emails/day, so ~4 per hour is safe)
+export const EMAIL_QUEUE_RATE_LIMIT = process.env.EMAIL_QUEUE_RATE_LIMIT
+  ? parseInt(process.env.EMAIL_QUEUE_RATE_LIMIT, 10)
+  : 10; // 10 emails per duration
+export const EMAIL_QUEUE_RATE_DURATION = process.env.EMAIL_QUEUE_RATE_DURATION
+  ? parseInt(process.env.EMAIL_QUEUE_RATE_DURATION, 10)
+  : 60000; // 1 minute (60000ms)

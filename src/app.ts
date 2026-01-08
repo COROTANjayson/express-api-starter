@@ -26,7 +26,7 @@ app.use(limiter);
 // 🔹 Generate token automatically on first visit
 app.use(csrfTokenMiddleware);
 // 🔹 Verify token on state-changing methods
-app.use(verifyCsrfMiddleware);
+// app.use(verifyCsrfMiddleware);
 
 // 🔹 Public route (just to get CSRF token)
 app.get("/csrf-token", (req, res) => {
