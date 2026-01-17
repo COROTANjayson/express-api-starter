@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import { getRedisClient } from "../libs/redis.config";
+import { logger } from "../libs/logger";
 
 /**
  * Generic email job data
@@ -26,7 +27,7 @@ export function getEmailQueue(): Queue<EmailJobData> | null {
 
   const redisClient = getRedisClient();
   if (!redisClient) {
-    console.warn("Redis not available. Email queue disabled.");
+    logger.warn("Redis not available. Email queue disabled.");
     return null;
   }
 
@@ -48,7 +49,7 @@ export function getEmailQueue(): Queue<EmailJobData> | null {
     },
   });
 
-  console.log("✓ Email queue initialized");
+  logger.info("✓ Email queue initialized");
 
   return emailQueue;
 }
@@ -70,7 +71,7 @@ export async function queueEmail(emailData: EmailJob): Promise<void> {
 
   const recipients =
     typeof emailData.to === "string" ? emailData.to : emailData.to.join(", ");
-  console.log(`✓ Email queued: ${emailData.subject} to ${recipients}`);
+  logger.info(`✓ Email queued: ${emailData.subject} to ${recipients}`);
 }
 
 /**
@@ -80,7 +81,7 @@ export async function closeEmailQueue(): Promise<void> {
   if (emailQueue) {
     await emailQueue.close();
     emailQueue = null;
-    console.log("Email queue closed");
+    logger.info("Email queue closed");
   }
 }
 

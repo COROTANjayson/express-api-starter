@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import mjml2html from "mjml";
+import { logger } from "../libs/logger";
 
 // Cache compiled templates for performance
 const templateCache = new Map<string, string>();
@@ -51,7 +52,7 @@ export function renderEmailTemplate(
   });
 
   if (errors && errors.length > 0) {
-    console.warn("MJML compilation warnings:", errors);
+    logger.warn("MJML compilation warnings:", errors);
   }
 
   // Cache the compiled template
@@ -83,5 +84,5 @@ function generateTextVersion(html: string): string {
  */
 export function clearTemplateCache(): void {
   templateCache.clear();
-  console.log("Email template cache cleared");
+  logger.info("Email template cache cleared");
 }

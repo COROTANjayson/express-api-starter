@@ -18,6 +18,7 @@ import {
 // const redis = redisUrl ? new Redis(redisUrl) : null;
 
 import { EmailService } from "../../utils/email.service";
+import { logger } from "../../libs/logger";
 
 export default class AuthService {
   private userRepo = new UserRepository();
@@ -72,8 +73,6 @@ export default class AuthService {
   async login({ email, password }: LoginInput) {
     const user = await this.userRepo.findByEmail(email);
     if (!user) throw new AppError("Email does not exists", 404);
-    console.log("password", password);
-    console.log("user.password", user.password);
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new AppError("Invalid credentials", 400);
 

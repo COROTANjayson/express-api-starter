@@ -6,22 +6,24 @@ import { startEmailWorker, closeEmailWorker } from "./workers/email.worker";
 import { closeEmailQueue } from "./queues/email.queue";
 import { closeRedis } from "./libs/redis.config";
 
+import { logger } from "./libs/logger";
+
 const port = process.env.PORT || 3000;
 
 // Start the email worker
 startEmailWorker();
 
 const server = app.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
+  logger.info(`Server listening on http://localhost:${port}`);
 });
 
 // Graceful shutdown
 const gracefulShutdown = async (signal: string) => {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  logger.info(`\n${signal} received. Starting graceful shutdown...`);
 
   // Close server to stop accepting new connections
   server.close(async () => {
-    console.log("HTTP server closed");
+    logger.info("HTTP server closed");
 
     try {
       // Close email worker and queue
@@ -29,17 +31,17 @@ const gracefulShutdown = async (signal: string) => {
       await closeEmailQueue();
       await closeRedis();
 
-      console.log("Graceful shutdown complete");
+      logger.info("Graceful shutdown complete");
       process.exit(0);
     } catch (error) {
-      console.error("Error during shutdown:", error);
+      logger.error("Error during shutdown:", error);
       process.exit(1);
     }
   });
 
   // Force shutdown after 10 seconds
   setTimeout(() => {
-    console.error("Forced shutdown after timeout");
+    logger.error("Forced shutdown after timeout");
     process.exit(1);
   }, 10000);
 };

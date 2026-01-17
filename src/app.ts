@@ -9,7 +9,7 @@ import {
   csrfTokenMiddleware,
   verifyCsrfMiddleware,
 } from "./middlewares/csrfMiddleware";
-
+import { logger } from "./libs/logger";
 // import csrf from 'csurf';
 // https://chatgpt.com/c/68eb9870-0f28-8321-89fb-b3f88308208d <- csrf
 const app = express();
@@ -17,7 +17,17 @@ const app = express();
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
-app.use(morgan("dev"));
+
+const morganMiddleware = morgan(
+  ":method :url :status :res[content-length] - :response-time ms",
+  {
+    stream: {
+      write: (message) => logger.http(message.trim()),
+    },
+  }
+);
+
+app.use(morganMiddleware);
 
 // Default: 100 requests per 15 minutes
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });

@@ -1,5 +1,6 @@
 import Redis from "ioredis";
 import { REDIS_URL } from "../utils/config";
+import { logger } from "./logger";
 
 let redis: Redis | null = null;
 
@@ -13,7 +14,7 @@ export function getRedisClient(): Redis | null {
   }
 
   if (!REDIS_URL) {
-    console.warn(
+    logger.warn(
       "REDIS_URL not configured. Email queue will not be available. Emails will be sent synchronously."
     );
     return null;
@@ -26,16 +27,16 @@ export function getRedisClient(): Redis | null {
     });
 
     redis.on("connect", () => {
-      console.log("✓ Redis connected successfully");
+      logger.info("✓ Redis connected successfully");
     });
 
     redis.on("error", (err) => {
-      console.error("Redis connection error:", err);
+      logger.error("Redis connection error:", err);
     });
 
     return redis;
   } catch (error) {
-    console.error("Failed to initialize Redis:", error);
+    logger.error("Failed to initialize Redis:", error);
     return null;
   }
 }
@@ -47,7 +48,7 @@ export async function closeRedis(): Promise<void> {
   if (redis) {
     await redis.quit();
     redis = null;
-    console.log("Redis connection closed");
+    logger.info("Redis connection closed");
   }
 }
 

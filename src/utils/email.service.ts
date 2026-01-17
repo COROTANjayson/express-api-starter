@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { RESEND_API_KEY, RESEND_SENDER_EMAIL, CLIENT_URL } from "./config";
 import { queueEmail as addEmailToQueue, EmailJob } from "../queues/email.queue";
 import { renderEmailTemplate } from "./email-renderer";
+import { logger } from "../libs/logger";
 
 export class EmailService {
   private resend: Resend | null = null;
@@ -9,9 +10,9 @@ export class EmailService {
   constructor() {
     if (RESEND_API_KEY) {
       this.resend = new Resend(RESEND_API_KEY);
-      console.log("Resend Initialized");
+      logger.info("Resend Initialized");
     } else {
-      console.warn(
+      logger.warn(
         "Resend credentials not found. Email sending will be simulated."
       );
     }
@@ -29,7 +30,7 @@ export class EmailService {
     const sender = from || RESEND_SENDER_EMAIL || "onboarding@resend.dev";
 
     if (!this.resend) {
-      console.log("Simulating Email Send:", {
+      logger.info("Simulating Email Send:", {
         to,
         subject,
         template,
@@ -48,14 +49,14 @@ export class EmailService {
       });
 
       if (data.error) {
-        console.error("Resend Error:", data.error);
+        logger.error("Resend Error:", data.error);
         throw data.error;
       }
 
-      console.log("Email sent:", data);
+      logger.info("Email sent:", data);
       return data;
     } catch (error) {
-      console.error("Email sending failed:", error);
+      logger.error("Email sending failed:", error);
       throw error;
     }
   }
@@ -67,8 +68,8 @@ export class EmailService {
     try {
       await addEmailToQueue(emailData);
     } catch (error) {
-      console.error("Failed to queue email:", error);
-      console.log("Falling back to direct email sending...");
+      logger.error("Failed to queue email:", error);
+      logger.info("Falling back to direct email sending...");
       await this.sendEmail(emailData);
     }
   }

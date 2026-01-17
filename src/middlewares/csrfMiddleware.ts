@@ -9,6 +9,7 @@ import {
   CSRF_COOKIE_NAME,
   CSRF_SECRET,
 } from "../utils/config";
+import { logger } from "../libs/logger";
 
 // ✅ Step 1: Issue token if not exists
 export const csrfTokenMiddleware = (
@@ -43,7 +44,7 @@ export const verifyCsrfMiddleware = (
   }
 
   const csrfCookie = req.cookies[CSRF_COOKIE_NAME];
-  console.log("csrfCookie", csrfCookie);
+  logger.debug("csrfCookie", csrfCookie);
   const csrfHeader = req.headers["x-csrf-token"];
 
   if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {

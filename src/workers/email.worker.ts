@@ -6,18 +6,19 @@ import {
   EMAIL_QUEUE_RATE_LIMIT,
   EMAIL_QUEUE_RATE_DURATION,
 } from "../utils/config";
+import { logger } from "../libs/logger";
 
 let emailWorker: Worker<EmailJobData> | null = null;
 
 export function startEmailWorker(): Worker<EmailJobData> | null {
   if (emailWorker) {
-    console.log("Email worker already running");
+    logger.info("Email worker already running");
     return emailWorker;
   }
 
   const redisClient = getRedisClient();
   if (!redisClient) {
-    console.warn("Redis not available. Email worker will not start.");
+    logger.warn("Redis not available. Email worker will not start.");
     return null;
   }
 
@@ -26,7 +27,7 @@ export function startEmailWorker(): Worker<EmailJobData> | null {
   emailWorker = new Worker<EmailJobData>(
     "email",
     async (job: Job<EmailJobData>) => {
-      console.log(
+      logger.info(
         `Processing email job ${job.id} (attempt ${job.attemptsMade + 1}/${
           job.opts.attempts
         })`
@@ -40,11 +41,11 @@ export function startEmailWorker(): Worker<EmailJobData> | null {
           typeof job.data.to === "string"
             ? job.data.to
             : job.data.to.join(", ");
-        console.log(`✓ Email sent: ${job.data.subject} to ${recipients}`);
+        logger.info(`✓ Email sent: ${job.data.subject} to ${recipients}`);
 
         return { success: true };
       } catch (error: any) {
-        console.error(`✗ Email job ${job.id} failed:`, error.message || error);
+        logger.error(`✗ Email job ${job.id} failed:`, error.message || error);
         throw error;
       }
     },
@@ -62,18 +63,18 @@ export function startEmailWorker(): Worker<EmailJobData> | null {
 
   // Event listeners for monitoring
   emailWorker.on("completed", (job) => {
-    console.log(`✓ Email job ${job.id} completed successfully`);
+    logger.info(`✓ Email job ${job.id} completed successfully`);
   });
 
   emailWorker.on("failed", (job, err) => {
-    console.error(`✗ Email job ${job?.id} failed permanently:`, err.message);
+    logger.error(`✗ Email job ${job?.id} failed permanently:`, err.message);
   });
 
   emailWorker.on("error", (err) => {
-    console.error("Email worker error:", err);
+    logger.error("Email worker error:", err);
   });
 
-  console.log("✓ Email worker started");
+  logger.info("✓ Email worker started");
 
   return emailWorker;
 }
@@ -85,7 +86,7 @@ export async function closeEmailWorker(): Promise<void> {
   if (emailWorker) {
     await emailWorker.close();
     emailWorker = null;
-    console.log("Email worker closed");
+    logger.info("Email worker closed");
   }
 }
 
